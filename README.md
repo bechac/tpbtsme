@@ -42,3 +42,10 @@ Aucune compilation n'est nécessaire. Ouvrir `index.html` dans un navigateur, ou
 
 ## Important
 Les dossiers PDF sont des documents sources transmis par l'utilisateur. Les informations techniques affichées dans les hotspots sont limitées aux éléments vérifiés dans ces dossiers. Ne pas utiliser cette maquette comme procédure de consignation, de maintenance ou de sécurité. Vérifier les notices et appliquer les consignes de l'établissement.
+
+
+## Organisation interface – mise à jour
+- Accueil simplifié : retrait des panneaux « Parc technique de l'atelier » et « État des ressources ».
+- Menu réordonné : Maintenance générale de l'atelier avant Travaux pratiques.
+- Travaux pratiques classés par pilote : sélectionner une installation pour afficher sa liste de TP (initialement vide, à alimenter).
+- Logo E&T corrigé avec trois lignes centrées dans le cartouche.
