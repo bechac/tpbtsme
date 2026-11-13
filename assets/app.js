@@ -35,10 +35,20 @@ if(r==="ressources"){const filter=()=>{let q=$("#q").value.toLowerCase(),m=$("#m
 if(r==="carnet"){
  $("#addSession").onclick=sessionModal;
  $("#exportSession").onclick=()=>csv(store.get("sessions"),["date","group","pilot","activity","notes"],"carnet_atelier.csv");
- document.querySelectorAll("[data-session]").forEach(row=>{
-  row.onclick=()=>sessionDetail(Number(row.dataset.session));
-  row.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sessionDetail(Number(row.dataset.session))}};
- });
+ const tbody=$(".table-wrap tbody");
+ if(tbody){
+  const openRow=e=>{
+   const row=e.target.closest("tr[data-session]");
+   if(row)sessionDetail(Number(row.dataset.session));
+  };
+  tbody.addEventListener("click",openRow);
+  tbody.addEventListener("keydown",e=>{
+   if(e.key==="Enter"||e.key===" "){
+    const row=e.target.closest("tr[data-session]");
+    if(row){e.preventDefault();sessionDetail(Number(row.dataset.session));}
+   }
+  });
+ }
 }
 if(r==="maintenance"){$("#addInter").onclick=()=>interModal();$("#exportInter").onclick=()=>csv(store.get("inter"),["date","equipment","problem","owner","status","action","parts","duration","tests"],"maintenance_atelier.csv");bindInter()}
 }
@@ -49,20 +59,17 @@ function tpPilot(id){const p=data.find(x=>x.id===id);if(!p)return tp();return `$
 function maintenance(){let rows=store.get("inter");return `${head("SUIVI TECHNIQUE","Maintenance générale de l'atelier","Suivre les signalements, les interventions et l'historique de maintenance du parc.",'<button class="btn" id="addInter">＋ Déclarer une intervention</button>')}<div class="stats" style="margin-bottom:14px"><div class="stat"><b>${rows.length}</b><span>interventions</span></div><div class="stat"><b>${rows.filter(x=>x.status!=="Clôturée").length}</b><span>à traiter / en cours</span></div><div class="stat"><b>${rows.filter(x=>x.status==="Clôturée").length}</b><span>clôturées</span></div></div><div class="callout">Cet espace concerne tous les équipements de l'atelier. Il ne remplace pas le TP de maintenance pédagogique du pilote n°13.</div><div class="toolbar"><button class="btn line" id="exportInter">Exporter CSV</button></div>${rows.length?`<div class="table-wrap"><table><thead><tr><th>DATE</th><th>ÉQUIPEMENT</th><th>PROBLÈME</th><th>RESPONSABLE</th><th>ÉTAT</th><th></th></tr></thead><tbody>${rows.slice().reverse().map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.equipment)}</td><td>${esc(x.problem)}</td><td>${esc(x.owner)}</td><td>${esc(x.status)}</td><td><button class="btn line" data-open="${x.id}">Ouvrir</button></td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Aucune intervention enregistrée.</div>'}<div class="section-head"><div><h2>Informations suivies</h2><p>Signalement, diagnostic, action, pièces, durée, essais et remise en service.</p></div></div>`}
 function openModal(title,body,button,fn){modal.innerHTML=`<div class="modal-bg"><div class="modal-box"><div class="modal-head"><h2>${title}</h2><button class="close">×</button></div><div class="modal-body">${body}<div style="text-align:right;margin-top:15px"><button class="btn" id="save">${button}</button></div></div></div></div>`;$(".close",modal).onclick=()=>modal.innerHTML="";$("#save").onclick=fn}
 function sessionDetail(index){
- const x=store.get("sessions")[index];if(!x)return;
- modal.innerHTML=`<div class="modal-bg"><div class="modal-box"><div class="modal-head"><h2>Détail de l'entrée du carnet</h2><button class="close" aria-label="Fermer">×</button></div><div class="modal-body">
- <div class="form-grid">
+ const rows=store.get("sessions");
+ const x=rows[index];
+ if(!x)return;
+ const body=`<div class="form-grid">
  <div class="field"><label>Date</label><div class="detail-value">${esc(x.date||"—")}</div></div>
  <div class="field"><label>Classe / groupe</label><div class="detail-value">${esc(x.group||"Non renseigné")}</div></div>
  <div class="field full"><label>Installation</label><div class="detail-value">${esc(x.pilot||"—")}</div></div>
  <div class="field full"><label>Activité réalisée</label><div class="detail-value detail-multiline">${esc(x.activity||"Non renseignée")}</div></div>
  <div class="field full"><label>Observations / état avant-après</label><div class="detail-value detail-multiline">${esc(x.notes||"Aucune observation saisie.")}</div></div>
- </div><div style="text-align:right;margin-top:15px"><button class="btn line close-detail">Fermer</button></div>
- </div></div></div>`;
- const close=()=>modal.innerHTML="";
- $(".close",modal).onclick=close;
- $(".close-detail",modal).onclick=close;
- $(".modal-bg",modal).onclick=e=>{if(e.target.classList.contains("modal-bg"))close()};
+ </div>`;
+ openModal("Détail de l'entrée du carnet",body,"Fermer",()=>{modal.innerHTML="";});
 }
 function sessionModal(){openModal("Nouvelle entrée au carnet",`<div class="form-grid"><div class="field"><label>Date</label><input id="sd" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Classe / groupe</label><input id="sg" placeholder="BTS ME1 – Groupe 1"></div><div class="field full"><label>Installation</label><select id="sp">${data.map(p=>`<option>${"Pilote "+String(p.id).padStart(2,"0")+" – "+p.title}</option>`).join("")}</select></div><div class="field full"><label>Activité</label><input id="sa"></div><div class="field full"><label>Observations / état avant-après</label><textarea id="sn"></textarea></div></div>`,"Enregistrer",()=>{let r=store.get("sessions");r.push({date:$("#sd").value,group:$("#sg").value,pilot:$("#sp").value,activity:$("#sa").value,notes:$("#sn").value});store.set("sessions",r);render()})}
 function interModal(old){openModal(old?"Modifier l'intervention":"Déclarer une intervention",`<div class="form-grid"><div class="field"><label>Date</label><input id="idate" type="date" value="${old?.date||new Date().toISOString().slice(0,10)}"></div><div class="field"><label>État</label><select id="istatus">${["À traiter","En cours","Clôturée"].map(s=>`<option ${old?.status===s?"selected":""}>${s}</option>`)}</select></div><div class="field full"><label>Équipement</label><input id="iequip" value="${esc(old?.equipment||"")}"></div><div class="field full"><label>Description de la panne</label><textarea id="iprob">${esc(old?.problem||"")}</textarea></div><div class="field"><label>Personne en charge</label><input id="iowner" value="${esc(old?.owner||"")}"></div><div class="field"><label>Durée (min)</label><input id="idur" type="number" value="${esc(old?.duration||"")}"></div><div class="field full"><label>Diagnostic et actions</label><textarea id="iact">${esc(old?.action||"")}</textarea></div><div class="field full"><label>Pièces utilisées / à prévoir</label><textarea id="iparts">${esc(old?.parts||"")}</textarea></div><div class="field full"><label>Essais et remise en service</label><textarea id="itests">${esc(old?.tests||"")}</textarea></div></div>`,"Enregistrer",()=>{let a=store.get("inter");let v={id:old?.id||Date.now(),date:$("#idate").value,status:$("#istatus").value,equipment:$("#iequip").value,problem:$("#iprob").value,owner:$("#iowner").value,duration:$("#idur").value,action:$("#iact").value,parts:$("#iparts").value,tests:$("#itests").value};let i=a.findIndex(x=>x.id===v.id);if(i<0)a.push(v);else a[i]=v;store.set("inter",a);render()})}
